@@ -15,19 +15,23 @@ export const useInterview = () => {
 
     const { loading, setLoading, report, setReport, reports, setReports } = context
 
+    const getErrorMessage = (error, fallbackMessage) => {
+        return error?.response?.data?.message || fallbackMessage
+    }
+
     const generateReport = async ({ jobDescription, selfDescription, resumeFile }) => {
         setLoading(true)
         let response = null
         try {
             response = await generateInterviewReport({ jobDescription, selfDescription, resumeFile })
             setReport(response.interviewReport)
+            return { success: true, data: response.interviewReport }
         } catch (error) {
-            console.log(error)
+            const message = getErrorMessage(error, "Unable to generate the interview report.")
+            return { success: false, message }
         } finally {
             setLoading(false)
         }
-
-        return response.interviewReport
     }
 
     const getReportById = async (interviewId) => {
@@ -37,7 +41,7 @@ export const useInterview = () => {
             response = await getInterviewReportById(interviewId)
             setReport(response.interviewReport)
         } catch (error) {
-            console.log(error)
+            console.log(getErrorMessage(error, "Unable to fetch interview report."))
         } finally {
             setLoading(false)
         }
@@ -51,7 +55,7 @@ export const useInterview = () => {
             response = await getAllInterviewReports()
             setReports(response.interviewReports)
         } catch (error) {
-            console.log(error)
+            console.log(getErrorMessage(error, "Unable to fetch interview reports."))
         } finally {
             setLoading(false)
         }
@@ -72,7 +76,7 @@ export const useInterview = () => {
             link.click()
         }
         catch (error) {
-            console.log(error)
+            console.log(getErrorMessage(error, "Unable to generate resume PDF."))
         } finally {
             setLoading(false)
         }

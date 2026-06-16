@@ -1,36 +1,95 @@
 const pdfParse = require("pdf-parse")
+const mammoth = require("mammoth")
 const { generateInterviewReport, generateResumePdf } = require("../services/ai.service")
 const interviewReportModel = require("../models/interviewReport.model")
 
 
+async function extractResumeText(file) {
+    if (!file) {
+        return ""
+    }
+
+    if (file.mimetype === "application/pdf") {
+        const resumeContent = await (new pdfParse.PDFParse(Uint8Array.from(file.buffer))).getText()
+        return resumeContent.text?.trim() || ""
+    }
+
+    if (file.mimetype === "application/vnd.openxmlformats-officedocument.wordprocessingml.document") {
+        const result = await mammoth.extractRawText({ buffer: file.buffer })
+        return result.value?.trim() || ""
+    }
+
+    const error = new Error("Unsupported resume format. Please upload a PDF or DOCX file.")
+    error.status = 400
+    throw error
+}
 
 
 /**
  * @description Controller to generate interview report based on user self description, resume and job description.
  */
 async function generateInterViewReportController(req, res) {
+    try {
+        const selfDescription = req.body.selfDescription?.trim() || ""
+        const jobDescription = req.body.jobDescription?.trim() || ""
 
-    const resumeContent = await (new pdfParse.PDFParse(Uint8Array.from(req.file.buffer))).getText()
-    const { selfDescription, jobDescription } = req.body
+        if (!jobDescription) {
+            return res.status(400).json({
+                message: "Job description is required."
+            })
+        }
 
-    const interViewReportByAi = await generateInterviewReport({
-        resume: resumeContent.text,
-        selfDescription,
-        jobDescription
-    })
+        if (!req.file && !selfDescription) {
+            return res.status(400).json({
+                message: "Please upload a resume or provide a self description."
+            })
+        }
 
-    const interviewReport = await interviewReportModel.create({
-        user: req.user.id,
-        resume: resumeContent.text,
-        selfDescription,
-        jobDescription,
-        ...interViewReportByAi
-    })
+        const resumeText = await extractResumeText(req.file)
 
-    res.status(201).json({
-        message: "Interview report generated successfully.",
-        interviewReport
-    })
+        if (req.file && !resumeText) {
+            return res.status(400).json({
+                message: "We could not read text from the uploaded file. Please try another PDF or DOCX."
+            })
+        }
+
+        const interViewReportByAi = await generateInterviewReport({
+            resume: resumeText,
+            selfDescription,
+            jobDescription
+        })
+
+        const interviewReport = await interviewReportModel.create({
+            user: req.user.id,
+            resume: resumeText,
+            selfDescription,
+            jobDescription,
+            ...interViewReportByAi
+        })
+
+        res.status(201).json({
+            message: "Interview report generated successfully.",
+            interviewReport
+        })
+    } catch (error) {
+        const message = error?.message || "Unable to process the uploaded file."
+
+        if (message.includes("API key")) {
+            return res.status(502).json({
+                message: "Resume uploaded successfully, but AI generation is unavailable because the Gemini API key is invalid or missing."
+            })
+        }
+
+        if (message.includes("Invalid PDF")) {
+            return res.status(400).json({
+                message: "The uploaded PDF could not be parsed. Please try another PDF or upload a DOCX file."
+            })
+        }
+
+        return res.status(error.status || 500).json({
+            message
+        })
+    }
 
 }
 

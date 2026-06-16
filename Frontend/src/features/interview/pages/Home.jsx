@@ -3,19 +3,65 @@ import "../style/home.scss"
 import { useInterview } from '../hooks/useInterview.js'
 import { useNavigate } from 'react-router'
 
+const MAX_FILE_SIZE = 5 * 1024 * 1024
+const ACCEPTED_FILE_TYPES = [
+    "application/pdf",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+]
+
 const Home = () => {
 
     const { loading, generateReport,reports } = useInterview()
     const [ jobDescription, setJobDescription ] = useState("")
     const [ selfDescription, setSelfDescription ] = useState("")
+    const [ selectedFile, setSelectedFile ] = useState(null)
+    const [ formError, setFormError ] = useState("")
+    const [ isDragging, setIsDragging ] = useState(false)
     const resumeInputRef = useRef()
 
     const navigate = useNavigate()
 
+    const handleFileSelection = (file) => {
+        if (!file) {
+            return
+        }
+
+        if (!ACCEPTED_FILE_TYPES.includes(file.type)) {
+            setFormError("Please upload a PDF or DOCX file.")
+            return
+        }
+
+        if (file.size > MAX_FILE_SIZE) {
+            setFormError("Please upload a file smaller than 5MB.")
+            return
+        }
+
+        setFormError("")
+        setSelectedFile(file)
+    }
+
     const handleGenerateReport = async () => {
-        const resumeFile = resumeInputRef.current.files[ 0 ]
-        const data = await generateReport({ jobDescription, selfDescription, resumeFile })
-        navigate(`/interview/${data._id}`)
+        const resumeFile = selectedFile || resumeInputRef.current?.files?.[ 0 ] || null
+
+        if (!jobDescription.trim()) {
+            setFormError("Please paste the job description first.")
+            return
+        }
+
+        if (!resumeFile && !selfDescription.trim()) {
+            setFormError("Upload a resume or add a self description to continue.")
+            return
+        }
+
+        setFormError("")
+        const result = await generateReport({ jobDescription, selfDescription, resumeFile })
+
+        if (!result?.success) {
+            setFormError(result?.message || "Unable to upload the file right now.")
+            return
+        }
+
+        navigate(`/interview/${result.data._id}`)
     }
 
     if (loading) {
@@ -50,11 +96,12 @@ const Home = () => {
                         </div>
                         <textarea
                             onChange={(e) => { setJobDescription(e.target.value) }}
+                            value={jobDescription}
                             className='panel__textarea'
                             placeholder={`Paste the full job description here...\ne.g. 'Senior Frontend Engineer at Google requires proficiency in React, TypeScript, and large-scale system design...'`}
                             maxLength={5000}
                         />
-                        <div className='char-counter'>0 / 5000 chars</div>
+                        <div className='char-counter'>{jobDescription.length} / 5000 chars</div>
                     </div>
 
                     {/* Vertical Divider */}
@@ -75,13 +122,33 @@ const Home = () => {
                                 Upload Resume
                                 <span className='badge badge--best'>Best Results</span>
                             </label>
-                            <label className='dropzone' htmlFor='resume'>
+                            <label
+                                className={`dropzone ${selectedFile ? 'dropzone--selected' : ''} ${isDragging ? 'dropzone--dragging' : ''}`}
+                                htmlFor='resume'
+                                onDragOver={(event) => {
+                                    event.preventDefault()
+                                    setIsDragging(true)
+                                }}
+                                onDragLeave={() => setIsDragging(false)}
+                                onDrop={(event) => {
+                                    event.preventDefault()
+                                    setIsDragging(false)
+                                    handleFileSelection(event.dataTransfer.files?.[ 0 ])
+                                }}>
                                 <span className='dropzone__icon'>
                                     <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="16 16 12 12 8 16" /><line x1="12" y1="12" x2="12" y2="21" /><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3" /></svg>
                                 </span>
-                                <p className='dropzone__title'>Click to upload or drag &amp; drop</p>
-                                <p className='dropzone__subtitle'>PDF or DOCX (Max 5MB)</p>
-                                <input ref={resumeInputRef} hidden type='file' id='resume' name='resume' accept='.pdf,.docx' />
+                                <p className='dropzone__title'>{selectedFile ? selectedFile.name : 'Click to upload or drag & drop'}</p>
+                                <p className='dropzone__subtitle'>{selectedFile ? `${(selectedFile.size / 1024 / 1024).toFixed(2)} MB selected` : 'PDF or DOCX (Max 5MB)'}</p>
+                                <input
+                                    ref={resumeInputRef}
+                                    hidden
+                                    type='file'
+                                    id='resume'
+                                    name='resume'
+                                    accept='.pdf,.docx'
+                                    onChange={(event) => handleFileSelection(event.target.files?.[ 0 ])}
+                                />
                             </label>
                         </div>
 
@@ -93,12 +160,19 @@ const Home = () => {
                             <label className='section-label' htmlFor='selfDescription'>Quick Self-Description</label>
                             <textarea
                                 onChange={(e) => { setSelfDescription(e.target.value) }}
+                                value={selfDescription}
                                 id='selfDescription'
                                 name='selfDescription'
                                 className='panel__textarea panel__textarea--short'
                                 placeholder="Briefly describe your experience, key skills, and years of experience if you don't have a resume handy..."
                             />
                         </div>
+
+                        {formError && (
+                            <div className='form-error'>
+                                {formError}
+                            </div>
+                        )}
 
                         {/* Info Box */}
                         <div className='info-box'>
