@@ -128,3 +128,7 @@ npm run dev
 - CORS is currently configured for `http://localhost:5173`.
 - Authentication uses cookies, so frontend and backend should run together locally.
 - `mongodb-data/` appears to contain local database files and usually should not be pushed to GitHub unless intentionally required.
+
+- ## Author
+
+**Aditya Kumar Gupta**  
