@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Interview Planner - 4 Phase Project Guide</title>
+  <style>
+    :root {
+      --text: #1f2937;
+      --muted: #4b5563;
+      --border: #d1d5db;
+      --accent: #2563eb;
+      --bg: #ffffff;
+      --soft: #f8fafc;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      color: var(--text);
+      background: var(--bg);
+      line-height: 1.55;
+      font-size: 14px;
+    }
+
+    .page {
+      max-width: 920px;
+      margin: 0 auto;
+      padding: 40px 48px 56px;
+    }
+
+    h1, h2, h3 {
+      margin: 0 0 12px;
+      line-height: 1.25;
+    }
+
+    h1 {
+      font-size: 30px;
+      color: #111827;
+    }
+
+    h2 {
+      font-size: 22px;
+      color: var(--accent);
+      margin-top: 28px;
+      padding-bottom: 8px;
+      border-bottom: 2px solid var(--border);
+    }
+
+    h3 {
+      font-size: 16px;
+      margin-top: 18px;
+    }
+
+    p {
+      margin: 10px 0;
+    }
+
+    ul, ol {
+      margin: 8px 0 14px 22px;
+      padding: 0;
+    }
+
+    li {
+      margin: 6px 0;
+    }
+
+    .hero {
+      background: var(--soft);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 24px;
+      margin-bottom: 24px;
+    }
+
+    .hero p {
+      margin: 8px 0 0;
+      color: var(--muted);
+    }
+
+    .box {
+      background: #f9fafb;
+      border-left: 4px solid var(--accent);
+      padding: 14px 16px;
+      margin: 14px 0;
+    }
+
+    .code {
+      font-family: "Courier New", Courier, monospace;
+      background: #f3f4f6;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 14px;
+      white-space: pre-wrap;
+      margin: 12px 0;
+    }
+
+    .muted {
+      color: var(--muted);
+    }
+
+    .section {
+      page-break-inside: avoid;
+    }
+
+    .footer {
+      margin-top: 36px;
+      padding-top: 16px;
+      border-top: 1px solid var(--border);
+      color: var(--muted);
+      font-size: 12px;
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="hero">
+      <h1>Interview Planner Project Guide</h1>
+      <p>Integrated 4-phase learning document for understanding the architecture, backend, frontend, and full user journey of your project.</p>
+    </div>
+
+    <section class="section">
+      <h2>Phase 1: High-Level Architecture</h2>
+      <p>This project is a full-stack AI interview preparation application with a clear separation between frontend, backend, database, and AI service integration.</p>
+
+      <h3>Project Split</h3>
+      <ul>
+        <li><strong>Frontend</strong>: React + Vite application inside <strong>Frontend/</strong></li>
+        <li><strong>Backend</strong>: Node.js + Express API inside <strong>Backend/</strong></li>
+        <li><strong>Database</strong>: MongoDB using Mongoose</li>
+        <li><strong>AI</strong>: Gemini API through <strong>@google/genai</strong></li>
+      </ul>
+
+      <div class="code">React frontend  &lt;-&gt;  Express backend  &lt;-&gt;  MongoDB
+                               |
+                               -&gt; Gemini API</div>
+
+      <h3>Frontend Entry</h3>
+      <ul>
+        <li><strong>Frontend/src/main.jsx</strong> boots React</li>
+        <li><strong>Frontend/src/App.jsx</strong> wraps the app with <strong>AuthProvider</strong>, <strong>InterviewProvider</strong>, and the router</li>
+      </ul>
+
+      <h3>Backend Entry</h3>
+      <ul>
+        <li><strong>Backend/server.js</strong> loads environment variables, connects to MongoDB, and starts the server on port <strong>3000</strong></li>
+        <li><strong>Backend/src/app.js</strong> configures Express, middleware, and API routes</li>
+      </ul>
+
+      <h3>How Frontend And Backend Communicate</h3>
+      <ul>
+        <li>The frontend uses <strong>Axios</strong> with base URL <strong>http://localhost:3000</strong></li>
+        <li>Authentication and feature calls are organized into <strong>auth.api.js</strong> and <strong>interview.api.js</strong></li>
+        <li>Requests use <strong>withCredentials: true</strong> so JWT cookies are sent automatically</li>
+      </ul>
+
+      <h3>How Gemini Fits In</h3>
+      <ul>
+        <li>The frontend never talks directly to Gemini</li>
+        <li>The backend sends structured prompt data to Gemini from <strong>Backend/src/services/ai.service.js</strong></li>
+        <li>Gemini returns JSON containing match score, interview questions, skill gaps, roadmap, and title</li>
+      </ul>
+
+      <div class="box">
+        <strong>Phase 1 takeaway:</strong> this is a real full-stack architecture with client state, protected API routes, MongoDB persistence, and backend-controlled AI integration.
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>Phase 2: Backend Mechanics And API Routes</h2>
+      <p>The backend follows a clean route -> middleware -> controller -> service -> model structure.</p>
+
+      <h3>Boot Flow</h3>
+      <ul>
+        <li><strong>server.js</strong> starts the application</li>
+        <li><strong>database.js</strong> connects to MongoDB using <strong>MONGO_URI</strong></li>
+        <li><strong>app.js</strong> configures JSON parsing, cookies, CORS, and error handling</li>
+      </ul>
+
+      <h3>Auth Routes</h3>
+      <ul>
+        <li><strong>POST /api/auth/register</strong></li>
+        <li><strong>POST /api/auth/login</strong></li>
+        <li><strong>GET /api/auth/logout</strong></li>
+        <li><strong>GET /api/auth/get-me</strong></li>
+      </ul>
+
+      <h3>Interview Routes</h3>
+      <ul>
+        <li><strong>POST /api/interview/</strong> generates a report</li>
+        <li><strong>GET /api/interview/</strong> gets report history</li>
+        <li><strong>GET /api/interview/report/:interviewId</strong> gets one report</li>
+        <li><strong>POST /api/interview/resume/pdf/:interviewReportId</strong> generates a resume PDF</li>
+      </ul>
+
+      <h3>Middleware</h3>
+      <ul>
+        <li><strong>auth.middleware.js</strong> reads the JWT from cookies, checks blacklist, verifies it, and attaches <strong>req.user</strong></li>
+        <li><strong>file.middleware.js</strong> uses Multer memory storage, validates file type, and limits uploads to <strong>5MB</strong></li>
+      </ul>
+
+      <h3>Controllers</h3>
+      <ul>
+        <li><strong>auth.controller.js</strong> handles registration, login, logout, and current-user retrieval</li>
+        <li><strong>interview.controller.js</strong> validates inputs, parses resumes, calls Gemini, stores reports, fetches reports, and creates downloadable PDFs</li>
+      </ul>
+
+      <h3>Service Layer</h3>
+      <ul>
+        <li><strong>ai.service.js</strong> contains the AI logic instead of mixing it into controllers</li>
+        <li>It uses <strong>Zod</strong> + <strong>zod-to-json-schema</strong> to force structured Gemini responses</li>
+        <li>It also generates HTML resumes and converts them to PDF with <strong>Puppeteer</strong></li>
+      </ul>
+
+      <h3>Persistence</h3>
+      <ul>
+        <li><strong>interviewReport.model.js</strong> stores inputs, generated outputs, user ownership, and timestamps</li>
+        <li>This makes interview reports persistent application data instead of temporary AI responses</li>
+      </ul>
+
+      <div class="code">POST /api/interview/
+-&gt; auth middleware
+-&gt; upload middleware
+-&gt; controller validation
+-&gt; resume parsing
+-&gt; Gemini service
+-&gt; MongoDB save
+-&gt; response to frontend</div>
+
+      <div class="box">
+        <strong>Phase 2 takeaway:</strong> your backend is organized like a real production service with layered responsibilities and secure AI access from the server side.
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>Phase 3: Frontend Layout, Routing, And State Management</h2>
+      <p>The frontend uses React, React Router, Context, and custom hooks to manage auth, interview state, and page-level workflows.</p>
+
+      <h3>App Composition</h3>
+      <ul>
+        <li><strong>main.jsx</strong> renders the app</li>
+        <li><strong>App.jsx</strong> wraps the app in <strong>AuthProvider</strong>, <strong>InterviewProvider</strong>, and <strong>RouterProvider</strong></li>
+      </ul>
+
+      <h3>Routing</h3>
+      <ul>
+        <li><strong>/login</strong> and <strong>/register</strong> are public</li>
+        <li><strong>/</strong> and <strong>/interview/:interviewId</strong> are protected</li>
+        <li><strong>Protected.jsx</strong> blocks unauthenticated access and redirects users to login</li>
+      </ul>
+
+      <h3>Auth State</h3>
+      <ul>
+        <li><strong>auth.context.jsx</strong> stores <strong>user</strong> and <strong>loading</strong></li>
+        <li><strong>useAuth.js</strong> contains <strong>handleLogin</strong>, <strong>handleRegister</strong>, <strong>handleLogout</strong>, and initial <strong>getMe()</strong></li>
+        <li><strong>getMe()</strong> restores the session after refresh using the cookie already stored by the backend</li>
+      </ul>
+
+      <h3>Interview State</h3>
+      <ul>
+        <li><strong>interview.context.jsx</strong> stores <strong>report</strong>, <strong>reports</strong>, and <strong>loading</strong></li>
+        <li><strong>useInterview.js</strong> contains report generation, fetching, listing, and PDF download logic</li>
+      </ul>
+
+      <h3>Frontend API Layer</h3>
+      <ul>
+        <li><strong>auth.api.js</strong> handles auth HTTP calls</li>
+        <li><strong>interview.api.js</strong> handles feature HTTP calls</li>
+        <li>Pages stay cleaner because API requests are not embedded directly into UI components</li>
+      </ul>
+
+      <h3>Main Pages</h3>
+      <ul>
+        <li><strong>Login.jsx</strong> and <strong>Register.jsx</strong> collect credentials and delegate logic to hooks</li>
+        <li><strong>Home.jsx</strong> is the main orchestration page where the user submits the job description and profile data</li>
+        <li><strong>Interview.jsx</strong> is the report detail page that reads the route param and displays the stored report</li>
+      </ul>
+
+      <h3>Frontend Data Flow</h3>
+      <div class="code">Page component
+-&gt; custom hook
+-&gt; context state update
+-&gt; API service
+-&gt; backend response
+-&gt; UI re-render</div>
+
+      <div class="box">
+        <strong>Phase 3 takeaway:</strong> the frontend is organized by pages, hooks, context, and service files, which keeps state and UI responsibilities cleanly separated.
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>Phase 4: Full User Journey End-To-End</h2>
+      <p>This phase connects the whole system into one workflow from login to report generation and resume PDF download.</p>
+
+      <h3>Step 1: App Boot And Session Restore</h3>
+      <ul>
+        <li>The app starts and <strong>useAuth()</strong> calls <strong>getMe()</strong></li>
+        <li>If the JWT cookie is valid, backend returns user data and the frontend restores the session</li>
+      </ul>
+
+      <h3>Step 2: Protected Access</h3>
+      <ul>
+        <li>Protected pages are available only if <strong>user</strong> exists in auth context</li>
+        <li>Otherwise the user is redirected to login</li>
+      </ul>
+
+      <h3>Step 3: User Input</h3>
+      <ul>
+        <li>On <strong>Home.jsx</strong>, the user enters a <strong>jobDescription</strong></li>
+        <li>The user either uploads a resume or types a self-description</li>
+        <li>The frontend validates required input, file type, and file size before sending the request</li>
+      </ul>
+
+      <h3>Step 4: Backend Processing</h3>
+      <ul>
+        <li>The request goes through auth middleware and upload middleware</li>
+        <li>The controller extracts and validates the request body</li>
+        <li>If a resume exists, it is parsed into text before going to Gemini</li>
+      </ul>
+
+      <h3>Step 5: AI Generation</h3>
+      <ul>
+        <li>Gemini receives the resume text, self-description, and job description</li>
+        <li>It returns a structured interview report with score, questions, gaps, plan, and title</li>
+      </ul>
+
+      <h3>Step 6: Save And Display</h3>
+      <ul>
+        <li>The backend stores the report in MongoDB using the current user ID</li>
+        <li>The frontend stores the response and navigates to the report detail page</li>
+        <li><strong>Interview.jsx</strong> fetches the report again by route parameter and displays it</li>
+      </ul>
+
+      <h3>Step 7: Report History And Resume PDF</h3>
+      <ul>
+        <li>The home page can show recent reports from the database</li>
+        <li>The report page lets the user download a resume PDF generated from saved report data</li>
+        <li>The backend uses Gemini to create resume HTML and Puppeteer to export it as PDF</li>
+      </ul>
+
+      <div class="code">User logs in
+-&gt; session restored with getMe()
+-&gt; enters job description + resume/self-description
+-&gt; backend authenticates and parses input
+-&gt; Gemini generates structured report
+-&gt; MongoDB stores report
+-&gt; frontend shows report
+-&gt; user downloads tailored resume PDF</div>
+
+      <div class="box">
+        <strong>Phase 4 takeaway:</strong> your project behaves like a complete product, not a simple demo, because it includes authentication, validation, AI orchestration, persistence, history, and downloadable output.
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>Final Summary</h2>
+      <p>Your Interview Planner project demonstrates a practical full-stack architecture with:</p>
+      <ul>
+        <li>React + Vite for UI and routing</li>
+        <li>Context + hooks for state management</li>
+        <li>Express for backend APIs</li>
+        <li>JWT cookie-based authentication</li>
+        <li>MongoDB for persistent report storage</li>
+        <li>Gemini for structured AI generation</li>
+        <li>Puppeteer for resume PDF export</li>
+      </ul>
+
+      <p class="muted">If you can explain these four phases clearly, you can confidently walk an interviewer through the system architecture and the end-to-end user journey of this project.</p>
+    </section>
+
+    <div class="footer">
+      Generated from the local Interview Planner project walkthrough.
+    </div>
+  </div>
+</body>
+</html>

@@ -8,12 +8,21 @@ const Register = () => {
     const [ username, setUsername ] = useState("")
     const [ email, setEmail ] = useState("")
     const [ password, setPassword ] = useState("")
+    const [ formError, setFormError ] = useState("")
 
     const {loading,handleRegister} = useAuth()
     
     const handleSubmit = async (e) => {
         e.preventDefault()
-        await handleRegister({username,email,password})
+        setFormError("")
+
+        const result = await handleRegister({ username, email, password })
+
+        if (!result?.success) {
+            setFormError(result?.message || "Unable to create your account right now.")
+            return
+        }
+
         navigate("/")
     }
 
@@ -50,6 +59,7 @@ const Register = () => {
                     <button className='button primary-button' >Register</button>
 
                 </form>
+                {formError && <p>{formError}</p>}
 
                 <p>Already have an account? <Link to={"/login"} >Login</Link> </p>
             </div>

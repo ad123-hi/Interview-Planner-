@@ -10,10 +10,19 @@ const Login = () => {
 
     const [ email, setEmail ] = useState("")
     const [ password, setPassword ] = useState("")
+    const [ formError, setFormError ] = useState("")
 
     const handleSubmit = async (e) => {
         e.preventDefault()
-        await handleLogin({email,password})
+        setFormError("")
+
+        const result = await handleLogin({ email, password })
+
+        if (!result?.success) {
+            setFormError(result?.message || "Unable to log in right now.")
+            return
+        }
+
         navigate('/')
     }
 
@@ -41,6 +50,7 @@ const Login = () => {
                     </div>
                     <button className='button primary-button' >Login</button>
                 </form>
+                {formError && <p>{formError}</p>}
                 <p>Don't have an account? <Link to={"/register"} >Register</Link> </p>
             </div>
         </main>
